@@ -1,6 +1,7 @@
 package me.sirlennox.adblocker;
 
 import me.sirlennox.networkManager.NetworkManager;
+import me.sirlennox.networkManager.Utils;
 import me.sirlennox.networkManager.event.Event;
 import me.sirlennox.networkManager.event.events.PreRequestSentEvent;
 import me.sirlennox.networkManager.event.events.StartEvent;
@@ -29,11 +30,12 @@ public class Main {
             @Override
             public boolean onEvent(Event event) {
                 if (event instanceof PreRequestSentEvent) {
-                    String url = ((PreRequestSentEvent) event).request.host;
+                    String url = ((PreRequestSentEvent) event).request.url;
                     for (String s : adPages) {
-                        if (s.equalsIgnoreCase(url) || isSubdomainOf(url, s)) {
+                        if (s.equalsIgnoreCase(url) || Utils.isSubdomainOf(url, s)) {
                             System.out.println("BLOCKED -> " + url);
                             try {
+                                if(((PreRequestSentEvent) event).request.port != 443) Utils.sendHTTPResponse(((PreRequestSentEvent) event).request.socket, "200 OK", new HashMap<>(), "Ad Blocked");
                                 ((PreRequestSentEvent) event).request.socket.close();
                             } catch (IOException ignored) {}
                             return false;
@@ -51,16 +53,6 @@ public class Main {
             System.err.println("Error while starting Proxy on port " + port + "!");
             System.exit(-1);
         }
-    }
-
-    public static boolean isSubdomainOf(String urlWithSubdomain, String url) {
-        if (urlWithSubdomain.equalsIgnoreCase(url)) return true;
-        String[] split = urlWithSubdomain.split("\\.");
-        if (split.length > 2) {
-            String withoutSubdomain = String.join(".",
-                    Arrays.copyOfRange(split, split.length - 2, split.length));
-            return withoutSubdomain.equalsIgnoreCase(url);
-        } else return false;
     }
 
     public static void initAdPages() {
